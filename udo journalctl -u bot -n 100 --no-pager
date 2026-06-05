@@ -1,0 +1,10 @@
+● bot.service - Telegram Bot
+     Loaded: loaded (/etc/systemd/system/bot.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Sun 2026-03-01 00:59:28 UTC; 2s ago
+    Process: 222031 ExecStart=/usr/bin/python3 /root/bot.py (http://bot.py/) [0;1;31m(code=exited, status=1/FAILURE)[0m
+   Main PID: 222031 (code=exited, status=1/FAILURE)
+        CPU: 1.214s
+
+Mar 01 00:59:28 vultr systemd[1]: [0;1;39m[0;1;31m[0;1;39mbot.service: Main process exited, code=exited, status=1/FAILURE[0m
+Mar 01 00:59:28 vultr systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mbot.service: Failed with result 'exit-code'.[0m
+Mar 01 00:59:28 vultr systemd[1]: bot.service: Consumed 1.214s CPU time.

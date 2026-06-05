@@ -1,0 +1,235 @@
+from __future__ import annotations
+
+import os
+import sqlite3
+from datetime import datetime
+from html import escape
+from typing import Any, Dict, List, Optional
+
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+
+DB_PATH = os.environ.get("CHAT_DB", "/root/used_v.sqlite3")
+
+app = FastAPI(title="Chat Viewer")
+
+def _conn():
+    return sqlite3.connect(DB_PATH)
+
+def _ensure_tables():
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts INTEGER NOT NULL,
+            chat_id INTEGER NOT NULL,
+            user_id INTEGER,
+            username TEXT,
+            full_name TEXT,
+            direction TEXT NOT NULL,
+            msg_id INTEGER,
+            msg_type TEXT,
+            text TEXT
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_ts ON chat_messages(chat_id, ts)")
+    conn.commit()
+    conn.close()
+
+@app.on_event("startup")
+def _startup():
+    _ensure_tables()
+
+def _fmt_ts(ts: int) -> str:
+    try:
+        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return str(ts)
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse("/chats")
+
+@app.get("/health", include_in_schema=False)
+def health():
+    return {"ok": True}
+
+@app.get("/api/chats")
+def api_chats():
+    _ensure_tables()
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT chat_id,
+               MAX(ts) AS last_ts,
+               COUNT(*) AS cnt
+        FROM chat_messages
+        GROUP BY chat_id
+        ORDER BY last_ts DESC
+        LIMIT 200
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    return [{"chat_id": r[0], "last_ts": r[1], "count": r[2]} for r in rows]
+
+@app.get("/api/chat/{chat_id}")
+def api_chat(chat_id: int, limit: int = 400):
+    _ensure_tables()
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT ts, direction, user_id, username, full_name, msg_type, text
+           FROM chat_messages
+           WHERE chat_id=?
+           ORDER BY ts ASC
+           LIMIT ?""",
+        (chat_id, limit),
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return [
+        {
+            "ts": r[0],
+            "time": _fmt_ts(r[0]),
+            "direction": r[1],
+            "user_id": r[2],
+            "username": r[3],
+            "full_name": r[4],
+            "msg_type": r[5],
+            "text": r[6],
+        }
+        for r in rows
+    ]
+
+@app.get("/chats", response_class=HTMLResponse)
+def chats():
+    _ensure_tables()
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT m.chat_id, m.ts, m.text
+        FROM chat_messages m
+        JOIN (
+            SELECT chat_id, MAX(ts) AS last_ts
+            FROM chat_messages
+            GROUP BY chat_id
+        ) t
+        ON m.chat_id=t.chat_id AND m.ts=t.last_ts
+        ORDER BY m.ts DESC
+        LIMIT 200
+    """)
+    rows = cur.fetchall()
+    conn.close()
+
+    items = []
+    for chat_id, ts, text in rows:
+        preview = (text or "").replace("\n", " ")
+        if len(preview) > 80:
+            preview = preview[:80] + "…"
+        items.append(f"<a class='chat' href='/chat/{chat_id}'>"
+                     f"<div class='title'>Chat {chat_id}</div>"
+                     f"<div class='meta'>{escape(_fmt_ts(ts))}</div>"
+                     f"<div class='preview'>{escape(preview)}</div>"
+                     f"</a>")
+    body = "\n".join(items) if items else "<div class='empty'>ยังไม่มีข้อมูลแชท (ให้บอทมีคนคุยก่อน)</div>"
+
+    return HTMLResponse(f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Chat Viewer</title>
+<style>
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#0b0b0c;color:#eee;margin:0}}
+.header{{padding:14px 16px;border-bottom:1px solid #222;position:sticky;top:0;background:#0b0b0c}}
+.container{{max-width:900px;margin:0 auto;padding:12px 12px 40px}}
+.chat{{display:block;text-decoration:none;color:inherit;padding:12px;border:1px solid #1f1f22;border-radius:14px;margin:10px 0;background:#121214}}
+.title{{font-weight:700}}
+.meta{{opacity:.7;font-size:12px;margin-top:2px}}
+.preview{{opacity:.9;margin-top:6px}}
+.empty{{opacity:.8;padding:20px;border:1px dashed #333;border-radius:14px}}
+.small{{opacity:.7;font-size:12px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="font-weight:800">Chat Viewer</div>
+  <div class="small">ดูบันทึกแชทจาก DB: {escape(DB_PATH)}</div>
+</div>
+<div class="container">
+  {body}
+</div>
+</body>
+</html>""")
+
+@app.get("/chat/{chat_id}", response_class=HTMLResponse)
+def chat(chat_id: int, limit: int = 800):
+    _ensure_tables()
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT ts, direction, username, full_name, msg_type, text
+           FROM chat_messages
+           WHERE chat_id=?
+           ORDER BY ts ASC
+           LIMIT ?""",
+        (chat_id, limit),
+    )
+    rows = cur.fetchall()
+    conn.close()
+
+    bubbles = []
+    for ts, direction, username, full_name, msg_type, text in rows:
+        who = full_name or username or ("bot" if direction == "out" else "user")
+        t = escape(_fmt_ts(ts))
+        msg = escape(text or "")
+        msg = msg.replace("\n", "<br/>")
+        side = "right" if direction == "out" else "left"
+        bubbles.append(
+            f"<div class='row {side}'>"
+            f"  <div class='bubble'>"
+            f"    <div class='who'>{escape(who)} <span class='time'>{t}</span></div>"
+            f"    <div class='text'>{msg}</div>"
+            f"  </div>"
+            f"</div>"
+        )
+
+    body = "\n".join(bubbles) if bubbles else "<div class='empty'>ยังไม่มีข้อความในห้องนี้</div>"
+
+    return HTMLResponse(f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Chat {chat_id}</title>
+<style>
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#0b0b0c;color:#eee;margin:0}}
+.header{{padding:14px 16px;border-bottom:1px solid #222;position:sticky;top:0;background:#0b0b0c;display:flex;gap:12px;align-items:center}}
+a{{color:#9ecbff;text-decoration:none}}
+.container{{max-width:900px;margin:0 auto;padding:14px 12px 40px}}
+.row{{display:flex;margin:10px 0}}
+.row.left{{justify-content:flex-start}}
+.row.right{{justify-content:flex-end}}
+.bubble{{max-width:78%;padding:10px 12px;border-radius:16px;border:1px solid #1f1f22;background:#121214}}
+.row.right .bubble{{background:#142033}}
+.who{{font-weight:700;font-size:12px;opacity:.9;margin-bottom:6px}}
+.time{{font-weight:400;opacity:.65;margin-left:8px}}
+.text{{line-height:1.35}}
+.empty{{opacity:.8;padding:20px;border:1px dashed #333;border-radius:14px}}
+.small{{opacity:.7;font-size:12px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/chats">← กลับ</a>
+  <div>
+    <div style="font-weight:800">Chat {chat_id}</div>
+    <div class="small">limit {limit} ข้อความ</div>
+  </div>
+</div>
+<div class="container">
+  {body}
+</div>
+</body>
+</html>""")

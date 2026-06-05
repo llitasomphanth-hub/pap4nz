@@ -1,0 +1,20 @@
+[0;1;32m●[0m bot.service - Telegram Bot
+     Loaded: loaded (/etc/systemd/system/bot.service; enabled; vendor preset: enabled)
+     Active: [0;1;32mactive (running)[0m since Sun 2026-03-01 05:19:24 UTC; 20min ago
+   Main PID: 231928 (python3)
+      Tasks: 2 (limit: 2211)
+     Memory: 49.4M
+        CPU: 2.080s
+     CGroup: /system.slice/bot.service
+             └─231928 /usr/bin/python3 /root/bot.py "(http://bot.py/)"
+
+Mar 01 05:38:36 vultr python3[231928]: 2026-03-01 05:38:36,036 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"
+Mar 01 05:38:46 vultr python3[231928]: 2026-03-01 05:38:46,147 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"
+Mar 01 05:38:56 vultr python3[231928]: 2026-03-01 05:38:56,256 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"
+Mar 01 05:39:06 vultr python3[231928]: 2026-03-01 05:39:06,367 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"
+Mar 01 05:39:16 vultr python3[231928]: 2026-03-01 05:39:16,478 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"
+Mar 01 05:39:26 vultr python3[231928]: 2026-03-01 05:39:26,589 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"
+Mar 01 05:39:36 vultr python3[231928]: 2026-03-01 05:39:36,703 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"
+Mar 01 05:39:46 vultr python3[231928]: 2026-03-01 05:39:46,813 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"
+Mar 01 05:39:56 vultr python3[231928]: 2026-03-01 05:39:56,925 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"
+Mar 01 05:40:07 vultr python3[231928]: 2026-03-01 05:40:07,036 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8211424695:AAFLHdMkQifVG9Wd2M9y0cBlaOi3gsI8Lp8/getUpdates "HTTP/1.1 200 OK"

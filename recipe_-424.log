@@ -1,0 +1,89 @@
+Unit qemu-guest-agent.service could not be found.
+Hit:1 http://de.archive.ubuntu.com/ubuntu jammy InRelease
+Get:2 http://de.archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]
+Get:3 http://de.archive.ubuntu.com/ubuntu jammy-backports InRelease [127 kB]
+Get:4 http://de.archive.ubuntu.com/ubuntu jammy-security InRelease [129 kB]
+Get:5 http://de.archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages [3,328 kB]
+Get:6 http://de.archive.ubuntu.com/ubuntu jammy-updates/main Translation-en [508 kB]
+Get:7 http://de.archive.ubuntu.com/ubuntu jammy-updates/main amd64 c-n-f Metadata [19.5 kB]
+Get:8 http://de.archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 Packages [5,518 kB]
+Get:9 http://de.archive.ubuntu.com/ubuntu jammy-updates/restricted Translation-en [1,053 kB]
+Get:10 http://de.archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 c-n-f Metadata [676 B]
+Get:11 http://de.archive.ubuntu.com/ubuntu jammy-updates/universe amd64 Packages [1,261 kB]
+Get:12 http://de.archive.ubuntu.com/ubuntu jammy-updates/universe Translation-en [315 kB]
+Get:13 http://de.archive.ubuntu.com/ubuntu jammy-updates/universe amd64 c-n-f Metadata [30.4 kB]
+Get:14 http://de.archive.ubuntu.com/ubuntu jammy-updates/multiverse amd64 Packages [59.0 kB]
+Get:15 http://de.archive.ubuntu.com/ubuntu jammy-updates/multiverse Translation-en [13.5 kB]
+Get:16 http://de.archive.ubuntu.com/ubuntu jammy-updates/multiverse amd64 c-n-f Metadata [612 B]
+Get:17 http://de.archive.ubuntu.com/ubuntu jammy-backports/main amd64 Packages [69.4 kB]
+Get:18 http://de.archive.ubuntu.com/ubuntu jammy-backports/main Translation-en [11.5 kB]
+Get:19 http://de.archive.ubuntu.com/ubuntu jammy-backports/main amd64 c-n-f Metadata [412 B]
+Get:20 http://de.archive.ubuntu.com/ubuntu jammy-backports/universe amd64 Packages [30.4 kB]
+Get:21 http://de.archive.ubuntu.com/ubuntu jammy-backports/universe Translation-en [16.9 kB]
+Get:22 http://de.archive.ubuntu.com/ubuntu jammy-backports/universe amd64 c-n-f Metadata [672 B]
+Get:23 http://de.archive.ubuntu.com/ubuntu jammy-security/main amd64 Packages [3,067 kB]
+Get:24 http://de.archive.ubuntu.com/ubuntu jammy-security/main Translation-en [437 kB]
+Get:25 http://de.archive.ubuntu.com/ubuntu jammy-security/main amd64 c-n-f Metadata [14.1 kB]
+Get:26 http://de.archive.ubuntu.com/ubuntu jammy-security/restricted amd64 Packages [5,356 kB]
+Get:27 http://de.archive.ubuntu.com/ubuntu jammy-security/restricted Translation-en [1,025 kB]
+Get:28 http://de.archive.ubuntu.com/ubuntu jammy-security/restricted amd64 c-n-f Metadata [680 B]
+Get:29 http://de.archive.ubuntu.com/ubuntu jammy-security/universe amd64 Packages [1,024 kB]
+Get:30 http://de.archive.ubuntu.com/ubuntu jammy-security/universe Translation-en [226 kB]
+Get:31 http://de.archive.ubuntu.com/ubuntu jammy-security/universe amd64 c-n-f Metadata [22.8 kB]
+Get:32 http://de.archive.ubuntu.com/ubuntu jammy-security/multiverse amd64 Packages [51.9 kB]
+Get:33 http://de.archive.ubuntu.com/ubuntu jammy-security/multiverse Translation-en [10.6 kB]
+Get:34 http://de.archive.ubuntu.com/ubuntu jammy-security/multiverse amd64 c-n-f Metadata [388 B]
+Fetched 23.9 MB in 16s (1,452 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  liburing2
+The following NEW packages will be installed:
+  liburing2 qemu-guest-agent
+0 upgraded, 2 newly installed, 0 to remove and 314 not upgraded.
+Need to get 262 kB of archives.
+After this operation, 907 kB of additional disk space will be used.
+Get:1 http://de.archive.ubuntu.com/ubuntu jammy/main amd64 liburing2 amd64 2.1-2build1 [10.3 kB]
+Get:2 http://de.archive.ubuntu.com/ubuntu jammy-updates/universe amd64 qemu-guest-agent amd64 1:6.2+dfsg-2ubuntu6.28 [252 kB]
+dpkg-preconfigure: unable to re-open stdin: No such file or directory
+Fetched 262 kB in 1s (198 kB/s)
+Selecting previously unselected package liburing2:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 108988 files and directories currently installed.)
+Preparing to unpack .../liburing2_2.1-2build1_amd64.deb ...
+Unpacking liburing2:amd64 (2.1-2build1) ...
+Selecting previously unselected package qemu-guest-agent.
+Preparing to unpack .../qemu-guest-agent_1%3a6.2+dfsg-2ubuntu6.28_amd64.deb ...
+Unpacking qemu-guest-agent (1:6.2+dfsg-2ubuntu6.28) ...
+Setting up liburing2:amd64 (2.1-2build1) ...
+Setting up qemu-guest-agent (1:6.2+dfsg-2ubuntu6.28) ...
+qemu-guest-agent.service is a disabled or a static unit, not starting it.
+Processing triggers for libc-bin (2.35-0ubuntu3.1) ...
+Processing triggers for man-db (2.10.2-1) ...
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+Synchronizing state of qemu-guest-agent.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable qemu-guest-agent
+The unit files have no installation config (WantedBy=, RequiredBy=, Also=,
+Alias= settings in the [Install] section, and DefaultInstance= for template
+units). This means they are not meant to be enabled using systemctl.
+ 
+Possible reasons for having this kind of units are:
+• A unit may be statically enabled by being symlinked from another unit's
+  .wants/ or .requires/ directory.
+• A unit's purpose may be to act as a helper for some other unit which has
+  a requirement dependency on it.
+• A unit may be started when needed via activation (socket, path, timer,
+  D-Bus, udev, scripted systemctl call, ...).
+• In case of template units, the unit is meant to be enabled with some
+  instance name specified.
+/root/recipe_-424.sh: 38: Syntax error: "(" unexpected (expecting "then")
