@@ -1,0 +1,5 @@
+cat: /etc/redhat-release: No such file or directory
+/root/recipe_5.sh: 6: [[: not found
+/root/recipe_5.sh: 14: [[: not found
+/root/recipe_5.sh: 26: [[: not found
+Ubuntu 22
