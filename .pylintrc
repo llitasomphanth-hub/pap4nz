@@ -1,0 +1,25 @@
+[MASTER]
+jobs=1
+
+[MESSAGES CONTROL]
+disable=
+    duplicate-code,
+    too-many-locals,
+    too-many-arguments,
+    too-many-branches,
+    too-many-statements,
+    line-too-long,
+    missing-docstring,
+    broad-except,
+    bare-except,
+    invalid-name,
+
+[FORMAT]
+max-line-length=120
+
+[DESIGN]
+max-attributes=10
+max-locals=25
+max-arguments=10
+max-branches=20
+max-statements=100
