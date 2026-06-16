@@ -135,8 +135,6 @@ def _approved_from_payment(payment: dict[str, Any], ref: str) -> dict[str, Any]:
         payload["review_id"] = payment.get("review_id")
     if payment.get("voucher_ref"):
         payload["voucher_ref"] = str(payment.get("voucher_ref") or "")
-    if payment.get("invite_link"):
-        payload["invite_link"] = str(payment.get("invite_link") or "")
     return {
         "ok": True,
         "ready": True,
@@ -173,11 +171,21 @@ def _result_from_webapp_source(ref: str, source: dict[str, Any]) -> dict[str, An
     if not payment:
         return _attach_webapp_context(_waiting_response(ref, pending_message), source)
 
+    flow = payment.get("flow") if isinstance(payment.get("flow"), dict) else {}
     if bool(payment.get("approved")):
-        return _attach_webapp_context(_approved_from_payment(payment, ref), source)
+        approved = _approved_from_payment(payment, ref)
+        if flow:
+            approved["flow"] = flow
+            approved["message"] = str(flow.get("message") or approved.get("message") or "")
+            if isinstance(approved.get("payload"), dict):
+                approved["payload"]["flow"] = flow
+        return _attach_webapp_context(approved, source)
 
     status = str(payment.get("source_status") or "pending").lower()
     waiting = _waiting_response(ref, pending_message)
+    if flow:
+        waiting["flow"] = flow
+        waiting["message"] = str(flow.get("message") or waiting.get("message") or "")
     if status:
         waiting["source_status"] = status
     if bool(payment.get("failed")):
