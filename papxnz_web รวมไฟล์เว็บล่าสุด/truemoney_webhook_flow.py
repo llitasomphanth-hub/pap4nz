@@ -4,6 +4,8 @@ from typing import Any
 
 
 TRUEMONEY_LINK_KEYWORD = "gift.truemoney.com"
+TRUEMONEY_BACKEND_ACTION = "truemoney.webhook.receive"
+TRUEMONEY_FLOW_TTL_SECONDS = 30
 
 TRUEMONEY_EVENT_TYPES = {
     "MONEY_LINK",
@@ -27,6 +29,8 @@ TRUEMONEY_STATUS_TEXT = {
     "UNAUTHORIZED": "ยืนยันตัวตนไม่ผ่าน",
     "MISSING_REQUIRED_FIELD": "ข้อมูลสำคัญไม่ครบ",
     "INVALID_AMOUNT": "ยอดเงินไม่ถูกต้อง",
+    "MISSING_FLOW_TOKEN": "ไม่พบโทเคนสำหรับส่งต่อพอร์ต",
+    "BACKEND_PORT_ERROR": "ส่งคำสั่งผ่าน backend_port ไม่สำเร็จ",
     "NOT_TRUEMONEY_EVENT": "ข้อมูลนี้ไม่ใช่ TrueMoney event",
     "MISSING_PAYLOAD": "ไม่พบ payload",
 }
@@ -42,6 +46,8 @@ HTTP_STATUS_MAP = {
     "UNAUTHORIZED": 401,
     "MISSING_REQUIRED_FIELD": 422,
     "INVALID_AMOUNT": 422,
+    "MISSING_FLOW_TOKEN": 400,
+    "BACKEND_PORT_ERROR": 502,
     "NOT_TRUEMONEY_EVENT": 400,
     "MISSING_PAYLOAD": 400,
 }
@@ -50,6 +56,8 @@ HTTP_STATUS_MAP = {
 def receive_truemoney_webhook_event(
     payload: dict[str, Any] | str | None,
     caller: str = "unknown",
+    backend_port: Any | None = None,
+    port_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     ตัวกลางรับข้อมูล TrueMoney
@@ -58,6 +66,8 @@ def receive_truemoney_webhook_event(
     - missing field = key ไม่มาเลย
     - empty string = key มาแล้วแต่ค่าเป็น ""; บาง field ของ TrueMoney อนุญาต
     - คืน reason/debug ให้หลังบ้าน ไม่ตอบ failed ลอย ๆ
+    - ถ้ามี backend_port ให้ส่งต่อเป็นคำสั่งกลาง ไม่คิด flow เอง
+    - backend_port ใช้ flow_token/action_token ไปดึงข้อมูลตั้งค่าจากบันทึกกลางเอง
     """
 
     result = _make_result(
@@ -135,12 +145,21 @@ def receive_truemoney_webhook_event(
             data=clean_data,
         )
 
-    return _make_result(
+    result = _make_result(
         code="ACCEPTED",
         ok=True,
         caller=caller,
         raw=payload,
         data=clean_data,
+    )
+
+    if backend_port is None:
+        return result
+
+    return _send_to_backend_port(
+        result=result,
+        backend_port=backend_port,
+        port_context=port_context or {},
     )
 
 
@@ -191,18 +210,26 @@ def _make_result(
             "can_validate": clean_data.get("can_validate", False),
         },
 
+        "flow": {
+            "action": TRUEMONEY_BACKEND_ACTION,
+            "send_to": "backend_port",
+            "return_to": "central_record",
+            "fresh_ttl_seconds": TRUEMONEY_FLOW_TTL_SECONDS,
+            "use_previous_answer_on_timeout": True,
+        },
+
         "action": {
             "ready": ok,
             "called_from": caller,
-            "can_retry": code in {"SERVER_ERROR", "RATE_LIMITED"},
-            "can_replay": code in {"SERVER_ERROR", "RATE_LIMITED"},
+            "can_retry": code in {"SERVER_ERROR", "RATE_LIMITED", "BACKEND_PORT_ERROR"},
+            "can_replay": code in {"SERVER_ERROR", "RATE_LIMITED", "BACKEND_PORT_ERROR"},
             "can_edit": True,
-            "next": "" if ok else "admin_review" if code in {"MISSING_REQUIRED_FIELD", "INVALID_AMOUNT"} else "",
+            "next": "" if ok else "admin_review" if code in {"MISSING_REQUIRED_FIELD", "INVALID_AMOUNT", "MISSING_FLOW_TOKEN", "BACKEND_PORT_ERROR"} else "",
         },
 
         "debug": {
             "owner": "truemoney_webhook_flow",
-            "stage": "accepted" if ok else "validate_payload",
+            "stage": _resolve_debug_stage(code, ok),
             "reason": code.lower(),
             "missing_fields": missing_fields,
             "empty_required_fields": empty_required_fields,
@@ -212,6 +239,110 @@ def _make_result(
 
         "raw": raw,
     }
+
+
+def _send_to_backend_port(
+    result: dict[str, Any],
+    backend_port: Any,
+    port_context: dict[str, Any],
+) -> dict[str, Any]:
+    token = _extract_flow_token(result=result, port_context=port_context)
+
+    if not token:
+        data = dict(result.get("data", {}))
+        data["can_validate"] = False
+        return _make_result(
+            code="MISSING_FLOW_TOKEN",
+            ok=False,
+            caller=result.get("caller", "unknown"),
+            raw=result.get("raw"),
+            data=data,
+        )
+
+    packet = {
+        "flow_token": token,
+        "action": TRUEMONEY_BACKEND_ACTION,
+        "provider": "truemoney",
+        "source": "truemoney_webhook_flow",
+        "caller": result.get("caller", "unknown"),
+        "payload": result.get("data", {}),
+        "reason": result.get("reason", "accepted"),
+        "http_status": result.get("http_status", 200),
+        "ttl_seconds": TRUEMONEY_FLOW_TTL_SECONDS,
+        "rules": {
+            "fresh_answer_window_seconds": TRUEMONEY_FLOW_TTL_SECONDS,
+            "use_previous_answer_on_timeout": True,
+            "port_must_read_central_record": True,
+            "flow_must_not_guess": True,
+        },
+        "route": {
+            "send_to": "backend_port",
+            "return_to": "central_record",
+        },
+        "raw": result.get("raw"),
+    }
+
+    try:
+        port_answer = _call_backend_port(backend_port=backend_port, packet=packet)
+    except Exception as exc:
+        data = dict(result.get("data", {}))
+        data["port_error"] = str(exc)
+        return _make_result(
+            code="BACKEND_PORT_ERROR",
+            ok=False,
+            caller=result.get("caller", "unknown"),
+            raw=result.get("raw"),
+            data=data,
+        )
+
+    patched = dict(result)
+    patched["backend_port"] = {
+        "ok": True,
+        "flow_token": token,
+        "answer": port_answer,
+    }
+    patched["debug"] = dict(result.get("debug", {}))
+    patched["debug"]["stage"] = "backend_port_dispatched"
+    patched["debug"]["flow_token"] = token
+    return patched
+
+
+def _call_backend_port(backend_port: Any, packet: dict[str, Any]) -> Any:
+    if callable(backend_port):
+        return backend_port(packet)
+
+    for method_name in ("dispatch", "dispatch_action", "send", "run", "call"):
+        method = getattr(backend_port, method_name, None)
+        if callable(method):
+            return method(packet)
+
+    raise TypeError("backend_port must be callable or expose dispatch/send/run/call")
+
+
+def _extract_flow_token(result: dict[str, Any], port_context: dict[str, Any]) -> str:
+    for key in ("flow_token", "action_token", "request_token", "trace_token", "token"):
+        value = port_context.get(key)
+        if value:
+            return str(value)
+
+    raw = result.get("raw")
+    if isinstance(raw, dict):
+        for key in ("flow_token", "action_token", "request_token", "trace_token", "token"):
+            value = raw.get(key)
+            if value:
+                return str(value)
+
+    return ""
+
+
+def _resolve_debug_stage(code: str, ok: bool) -> str:
+    if ok:
+        return "accepted"
+
+    if code in {"MISSING_FLOW_TOKEN", "BACKEND_PORT_ERROR"}:
+        return "backend_port"
+
+    return "validate_payload"
 
 
 def _is_truemoney_payload(payload: dict[str, Any] | str) -> bool:
